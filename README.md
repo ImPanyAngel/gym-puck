@@ -20,8 +20,8 @@ C++ with the Arduino framework, built with PlatformIO in VS Code. The interface 
 
 ## Roadmap
 
-- [ ] Run Waveshare's demo to confirm the display and touch work
-- [ ] Show text on the screen
+- [x] Run Waveshare's demo to confirm the display and touch work
+- [x] Show text on the screen
 - [ ] Read touch and the onboard buttons
 - [ ] Build a round UI with LVGL
 - [ ] Pair with the iPhone and show the current track
