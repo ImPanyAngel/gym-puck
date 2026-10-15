@@ -10,6 +10,7 @@
 static const int SCREEN_COUNT = 3;
 static lv_obj_t * screens[SCREEN_COUNT];
 static int current_screen = 0;
+static bool screen_on = true;
 
 void ui_init(void) {
     if (!lvgl_lock(0)) { return; }
@@ -30,10 +31,43 @@ void ui_init(void) {
 void ui_next_screen(void) {
     if (!lvgl_lock(0)) { return; }
 
+    // BOOT does nothing while the screen is off
+    if (!screen_on) {
+        lvgl_unlock();
+        return;
+    }
+
     // % wraps the count back to 0 after the last screen
     current_screen = (current_screen + 1) % SCREEN_COUNT;
     // false: keep the old screen, so it can be shown again later
     lv_screen_load_anim(screens[current_screen], LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
+
+    lvgl_unlock();
+}
+
+void ui_toggle_screen(void) {
+    if (!lvgl_lock(0)) { return; }
+
+    lv_display_t * display = lv_display_get_default();
+    lv_indev_t * touch = lv_indev_get_next(NULL);   // the only input device: the touch panel
+
+    if (screen_on) {
+        // Ignore touch first, so a tap in a pocket can't do anything
+        lv_indev_enable(touch, false);
+        // Stop LVGL redrawing: nothing would be seen, and it would only waste power
+        lv_display_enable_invalidation(display, false);
+        Lcd_SetDisplayOn(false);
+        Lcd_SetSleep(true);
+    } else {
+        Lcd_SetSleep(false);
+        // Redraw everything before the panel shows anything, so no stale frame flashes up
+        lv_display_enable_invalidation(display, true);
+        lv_obj_invalidate(lv_screen_active());
+        lv_refr_now(display);
+        Lcd_SetDisplayOn(true);
+        lv_indev_enable(touch, true);
+    }
+    screen_on = !screen_on;
 
     lvgl_unlock();
 }

@@ -180,7 +180,28 @@ void Lcd_SetBacklight(uint8_t brig) {
     esp_lcd_panel_io_tx_param(io_handle, lcd_cmd, &param, 1);
 }
 
-static void lvgl_wait_cb(lv_display_t * disp) 
+// Same QSPI command framing as Lcd_SetBacklight, for commands without parameters
+static void Lcd_SendCommand(uint8_t cmd) {
+    uint32_t lcd_cmd = cmd;
+    lcd_cmd <<= 8;
+    lcd_cmd |= 0x02 << 24;
+    esp_lcd_panel_io_tx_param(io_handle, lcd_cmd, NULL, 0);
+}
+
+void Lcd_SetSleep(bool sleep) {
+    if (sleep) {
+        Lcd_SendCommand(0x10);              // sleep in
+    } else {
+        Lcd_SendCommand(0x11);              // sleep out
+        vTaskDelay(pdMS_TO_TICKS(120));     // the panel needs this long before the next command
+    }
+}
+
+void Lcd_SetDisplayOn(bool on) {
+    esp_lcd_panel_disp_on_off(panel_handle, on);
+}
+
+static void lvgl_wait_cb(lv_display_t * disp)
 {
     xSemaphoreTake(flush_done_semaphore, portMAX_DELAY);
 }

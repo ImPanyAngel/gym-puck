@@ -21,7 +21,7 @@ The puck connects to the iPhone over Bluetooth Low Energy using Apple Media Serv
 | Button | Action |
 |---|---|
 | BOOT | Switch to the next screen (Music → Went today? → Calendar → Music) |
-| PWR, press | Deep sleep; press again to wake |
+| PWR, press | Screen off, with Bluetooth still connected and touch ignored; press again to turn it back on |
 | PWR, hold | Power off |
 
 ## Hardware
