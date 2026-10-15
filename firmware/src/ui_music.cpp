@@ -1,5 +1,6 @@
 #include "ui_music.h"
 #include "ui_colors.h"
+#include "ams.h"
 
 static lv_obj_t * screen;
 static lv_obj_t * progress_arc;
@@ -64,6 +65,17 @@ static void update_progress(lv_timer_t * timer) {
     }
 }
 
+// Runs inside LVGL's task when a control is tapped. ams_send_command only queues the
+// command, so the screen never waits for the phone.
+static void on_control_clicked(lv_event_t * e) {
+    AmsCommand command = (AmsCommand)(uintptr_t) lv_event_get_user_data(e);
+    ams_send_command(command);
+}
+
+static void add_command(lv_obj_t * btn, AmsCommand command) {
+    lv_obj_add_event_cb(btn, on_control_clicked, LV_EVENT_CLICKED, (void *)(uintptr_t) command);
+}
+
 lv_obj_t * ui_music_create(void) {
     screen = lv_obj_create(NULL);
 
@@ -99,18 +111,23 @@ lv_obj_t * ui_music_create(void) {
     lv_obj_set_style_text_color(artist_label, lv_color_hex(UI_COLOR_SECONDARY), 0);
     lv_obj_align(artist_label, LV_ALIGN_CENTER, 0, -58);
 
-    // Playback controls; they do nothing until the iPhone is connected
-    create_icon_button(LV_SYMBOL_PREV, &lv_font_montserrat_34, 80, -110, 15);
+    // Playback controls. Each button carries its AMS command as user data.
+    lv_obj_t * prev_btn = create_icon_button(LV_SYMBOL_PREV, &lv_font_montserrat_34, 80, -110, 15);
     lv_obj_t * play_btn = create_icon_button(LV_SYMBOL_PAUSE, &lv_font_montserrat_48, 100, 0, 15);
     play_label = lv_obj_get_child(play_btn, 0);
-    create_icon_button(LV_SYMBOL_NEXT, &lv_font_montserrat_34, 80, 110, 15);
+    lv_obj_t * next_btn = create_icon_button(LV_SYMBOL_NEXT, &lv_font_montserrat_34, 80, 110, 15);
+    add_command(prev_btn, AMS_COMMAND_PREVIOUS_TRACK);
+    add_command(play_btn, AMS_COMMAND_TOGGLE_PLAY_PAUSE);
+    add_command(next_btn, AMS_COMMAND_NEXT_TRACK);
 
     time_label = lv_label_create(screen);
     lv_obj_set_style_text_font(time_label, &lv_font_montserrat_24, 0);
     lv_obj_align(time_label, LV_ALIGN_CENTER, 0, 90);
 
-    create_icon_button(LV_SYMBOL_MINUS, &lv_font_montserrat_24, 64, -50, 150);
-    create_icon_button(LV_SYMBOL_PLUS, &lv_font_montserrat_24, 64, 50, 150);
+    lv_obj_t * volume_down_btn = create_icon_button(LV_SYMBOL_MINUS, &lv_font_montserrat_24, 64, -50, 150);
+    lv_obj_t * volume_up_btn = create_icon_button(LV_SYMBOL_PLUS, &lv_font_montserrat_24, 64, 50, 150);
+    add_command(volume_down_btn, AMS_COMMAND_VOLUME_DOWN);
+    add_command(volume_up_btn, AMS_COMMAND_VOLUME_UP);
 
     // Recalculate the position twice a second. LVGL timers run in LVGL's own task,
     // which already holds the lock.

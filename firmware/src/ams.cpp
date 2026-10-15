@@ -6,6 +6,7 @@
 // Apple Media Service and its characteristics, from Apple's AMS specification
 static const char * AMS_SERVICE_UUID       = "89D3502B-0F36-433A-8EF4-C502AD55F8DC";
 static const char * AMS_ENTITY_UPDATE_UUID = "2F7CABCE-808D-411F-9A0C-BB92BA96C102";
+static const char * AMS_REMOTE_COMMAND_UUID = "9B3C81D8-57B1-4A8A-B8DF-0E56F7CA51C2";
 
 // Entities: the "things" AMS reports on
 static const uint8_t ENTITY_PLAYER = 0;
@@ -74,23 +75,37 @@ static void on_entity_update(NimBLERemoteCharacteristic * characteristic, uint8_
     }
 }
 
-// Asking the phone things means waiting for its replies, which can't be done inside the
-// Bluetooth stack's own callbacks (it would be waiting for itself), so this runs as a task.
-static void ams_subscribe_task(void * param) {
-    uint16_t conn_handle = (uint16_t)(uintptr_t) param;
+// Everything that talks to the phone happens on this one task, fed by a queue. Asking the
+// phone something means waiting for its reply, which can't be done inside the Bluetooth
+// stack's callbacks (it would be waiting for itself) or LVGL's (the screen would freeze).
+// Using a single task also means subscribing and sending commands can never overlap.
+enum AmsMessageType : uint8_t {
+    MSG_CONNECTED,      // value: connection handle
+    MSG_DISCONNECTED,
+    MSG_COMMAND,        // value: an AmsCommand
+};
+
+struct AmsMessage {
+    AmsMessageType type;
+    uint16_t value;
+};
+
+static QueueHandle_t message_queue;
+static NimBLERemoteCharacteristic * remote_command = nullptr;   // only used on the AMS task
+
+static void subscribe(uint16_t conn_handle) {
+    // Getting the client clears whatever was found on a previous connection
     NimBLEClient * client = NimBLEDevice::getServer()->getClient(conn_handle);
 
     NimBLERemoteService * ams = client->getService(AMS_SERVICE_UUID);
     if (ams == nullptr) {
         Serial.println("AMS: service not found on the phone");
-        vTaskDelete(NULL);
         return;
     }
 
     NimBLERemoteCharacteristic * entity_update = ams->getCharacteristic(AMS_ENTITY_UPDATE_UUID);
     if (entity_update == nullptr || !entity_update->subscribe(true, on_entity_update)) {
         Serial.println("AMS: could not subscribe to Entity Update");
-        vTaskDelete(NULL);
         return;
     }
 
@@ -101,13 +116,66 @@ static void ams_subscribe_task(void * param) {
     bool ok = entity_update->writeValue(track_request, sizeof(track_request), true) &&
               entity_update->writeValue(player_request, sizeof(player_request), true);
     Serial.println(ok ? "AMS: subscribed" : "AMS: subscription request failed");
-    if (ok) {
-        ui_set_connected(true);
+    if (!ok) {
+        return;
     }
 
-    vTaskDelete(NULL);
+    remote_command = ams->getCharacteristic(AMS_REMOTE_COMMAND_UUID);
+    if (remote_command == nullptr) {
+        Serial.println("AMS: Remote Command not found, controls won't work");
+    }
+    ui_set_connected(true);
+}
+
+static void send_command(uint8_t command) {
+    if (remote_command == nullptr) {
+        Serial.printf("AMS: not connected, command %d ignored\n", command);
+        return;
+    }
+    // One byte: the command number. The phone acts on it and sends any resulting changes
+    // (new track, paused...) through Entity Update, which updates the screen.
+    bool ok = remote_command->writeValue(&command, 1, true);
+    Serial.printf("AMS: command %d %s\n", command, ok ? "sent" : "failed");
+}
+
+static void ams_task(void * param) {
+    AmsMessage message;
+    while (true) {
+        xQueueReceive(message_queue, &message, portMAX_DELAY);   // sleeps until a message
+        switch (message.type) {
+            case MSG_CONNECTED:
+                subscribe(message.value);
+                break;
+            case MSG_DISCONNECTED:
+                remote_command = nullptr;   // it belonged to the old connection
+                break;
+            case MSG_COMMAND:
+                send_command(message.value);
+                break;
+        }
+    }
+}
+
+// Queues a message without waiting. If the queue is ever full, the message is dropped,
+// which for a button tap is better than freezing whoever called this.
+static void post(AmsMessageType type, uint16_t value) {
+    AmsMessage message = {type, value};
+    xQueueSend(message_queue, &message, 0);
+}
+
+void ams_init(void) {
+    message_queue = xQueueCreate(8, sizeof(AmsMessage));
+    xTaskCreate(ams_task, "ams", 8 * 1024, NULL, 2, NULL);
 }
 
 void ams_start(uint16_t conn_handle) {
-    xTaskCreate(ams_subscribe_task, "ams_subscribe", 8 * 1024, (void *)(uintptr_t) conn_handle, 2, NULL);
+    post(MSG_CONNECTED, conn_handle);
+}
+
+void ams_stop(void) {
+    post(MSG_DISCONNECTED, 0);
+}
+
+void ams_send_command(AmsCommand command) {
+    post(MSG_COMMAND, command);
 }

@@ -24,6 +24,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
 
     void onDisconnect(NimBLEServer * server, NimBLEConnInfo & info, int reason) override {
         Serial.printf("BLE disconnected, reason %d\n", reason);
+        ams_stop();
         ui_set_connected(false);
     }
 
@@ -42,6 +43,7 @@ static ServerCallbacks server_callbacks;
 
 void ble_init(void) {
     NimBLEDevice::init(DEVICE_NAME);
+    ams_init();
 
     // Allow packets up to 185 bytes (the default is 23), so most titles fit in one
     // notification instead of arriving truncated. The phone agrees to this when it connects.

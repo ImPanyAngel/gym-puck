@@ -40,8 +40,8 @@ C++ with the Arduino framework, built with PlatformIO in VS Code. The interface 
 - [x] Show text on the screen
 - [x] Read touch and the onboard buttons
 - [x] Build a round UI with LVGL
-- [ ] Pair with the iPhone and show the current track
-- [ ] Add playback controls
+- [x] Pair with the iPhone and show the current track
+- [x] Add playback controls
 - [ ] Add the gym tracker
 - [ ] Add a battery and deep sleep
 - [ ] Design and print the case
