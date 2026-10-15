@@ -16,7 +16,7 @@ The puck connects to the iPhone over Bluetooth Low Energy using Apple Media Serv
 |---|---|
 | Music (shown at power-on) | Track title, with the artist below it in grey; previous, play/pause and next; volume down and up; elapsed and total time; a progress arc around the edge |
 | Went today? | A large toggle: tap to mark today as a gym day, tap again to undo |
-| Calendar | The days of the week, each filled in if I went |
+| Calendar | The current month, with today outlined and each gym day filled in |
 
 | Button | Action |
 |---|---|
@@ -39,7 +39,7 @@ C++ with the Arduino framework, built with PlatformIO in VS Code. The interface 
 - [x] Run Waveshare's demo to confirm the display and touch work
 - [x] Show text on the screen
 - [x] Read touch and the onboard buttons
-- [ ] Build a round UI with LVGL
+- [x] Build a round UI with LVGL
 - [ ] Pair with the iPhone and show the current track
 - [ ] Add playback controls
 - [ ] Add the gym tracker

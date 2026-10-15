@@ -2,6 +2,9 @@
 #include "buttons.h"
 #include "ui.h"
 
+static const int BOOT_BUTTON_PIN = 0;
+static const int PWR_BUTTON_PIN = 17;
+
 struct Button {
   int pin;
   const char *name;
@@ -10,8 +13,8 @@ struct Button {
 };
 
 static Button buttons[] = {
-  {0,  "Button GPIO 0",  HIGH, 0},
-  {17, "Button GPIO 17", HIGH, 0},
+  {BOOT_BUTTON_PIN, "BOOT", HIGH, 0},
+  {PWR_BUTTON_PIN,  "PWR",  HIGH, 0},
 };
 
 void buttons_init(void) {
@@ -26,7 +29,9 @@ void buttons_poll(void) {
         if (reading != b.lastState) {
             if (reading == LOW && (millis() - b.lastChange) > 30) {
                 Serial.println(b.name);
-                ui_show_button_press(b.name);
+                if (b.pin == BOOT_BUTTON_PIN) {
+                    ui_next_screen();
+                }
             }
             b.lastChange = millis();
             b.lastState = reading;

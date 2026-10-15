@@ -585,25 +585,25 @@
  * https://fonts.google.com/specimen/Montserrat */
 #define LV_FONT_MONTSERRAT_8  0
 #define LV_FONT_MONTSERRAT_10 0
-#define LV_FONT_MONTSERRAT_12 1
+#define LV_FONT_MONTSERRAT_12 0
 #define LV_FONT_MONTSERRAT_14 1
-#define LV_FONT_MONTSERRAT_16 1
+#define LV_FONT_MONTSERRAT_16 0
 #define LV_FONT_MONTSERRAT_18 0
 #define LV_FONT_MONTSERRAT_20 0
 #define LV_FONT_MONTSERRAT_22 0
-#define LV_FONT_MONTSERRAT_24 0
+#define LV_FONT_MONTSERRAT_24 1
 #define LV_FONT_MONTSERRAT_26 0
 #define LV_FONT_MONTSERRAT_28 0
 #define LV_FONT_MONTSERRAT_30 0
 #define LV_FONT_MONTSERRAT_32 0
-#define LV_FONT_MONTSERRAT_34 0
+#define LV_FONT_MONTSERRAT_34 1
 #define LV_FONT_MONTSERRAT_36 0
 #define LV_FONT_MONTSERRAT_38 0
 #define LV_FONT_MONTSERRAT_40 0
 #define LV_FONT_MONTSERRAT_42 0
 #define LV_FONT_MONTSERRAT_44 0
 #define LV_FONT_MONTSERRAT_46 0
-#define LV_FONT_MONTSERRAT_48 0
+#define LV_FONT_MONTSERRAT_48 1
 
 /* Demonstrate special features */
 #define LV_FONT_MONTSERRAT_28_COMPRESSED    0  /**< bpp = 3 */
@@ -714,7 +714,7 @@
 
 #define LV_USE_CALENDAR   1
 #if LV_USE_CALENDAR
-    #define LV_CALENDAR_WEEK_STARTS_MONDAY 0
+    #define LV_CALENDAR_WEEK_STARTS_MONDAY 1
     #if LV_CALENDAR_WEEK_STARTS_MONDAY
         #define LV_CALENDAR_DEFAULT_DAY_NAMES {"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"}
     #else
@@ -722,8 +722,8 @@
     #endif
 
     #define LV_CALENDAR_DEFAULT_MONTH_NAMES {"January", "February", "March",  "April", "May",  "June", "July", "August", "September", "October", "November", "December"}
-    #define LV_USE_CALENDAR_HEADER_ARROW 1
-    #define LV_USE_CALENDAR_HEADER_DROPDOWN 1
+    #define LV_USE_CALENDAR_HEADER_ARROW 0
+    #define LV_USE_CALENDAR_HEADER_DROPDOWN 0
     #define LV_USE_CALENDAR_CHINESE 0
 #endif  /*LV_USE_CALENDAR*/
 
@@ -802,7 +802,7 @@
 #define LV_USE_THEME_DEFAULT 1
 #if LV_USE_THEME_DEFAULT
     /** 0: Light mode; 1: Dark mode */
-    #define LV_THEME_DEFAULT_DARK 0
+    #define LV_THEME_DEFAULT_DARK 1
 
     /** 1: Enable grow on press */
     #define LV_THEME_DEFAULT_GROW 1
@@ -1328,10 +1328,10 @@
 #if LV_BUILD_DEMOS
     /** Show some widgets. This might be required to increase `LV_MEM_SIZE`. */
     #define LV_USE_DEMO_WIDGETS 1
-    
+
     /** Demonstrate usage of encoder and keyboard. */
     #define LV_USE_DEMO_KEYPAD_AND_ENCODER 1
-    
+
     /** Benchmark your system */
     #define LV_USE_DEMO_BENCHMARK 0
 
@@ -1343,10 +1343,10 @@
     /** Render test for each primitive.
      *  - Requires at least 480x272 display. */
     #define LV_USE_DEMO_RENDER 0
-    
+
     /** Stress test for LVGL */
     #define LV_USE_DEMO_STRESS 0
-    
+
     /** Music player demo */
     #define LV_USE_DEMO_MUSIC 1
     #if LV_USE_DEMO_MUSIC
@@ -1356,38 +1356,38 @@
         #define LV_DEMO_MUSIC_LARGE     0
         #define LV_DEMO_MUSIC_AUTO_PLAY 1
     #endif
-    
+
     /** Vector graphic demo */
     #define LV_USE_DEMO_VECTOR_GRAPHIC  0
-    
+
     /*---------------------------
      * Demos from lvgl/lv_demos
       ---------------------------*/
-    
+
     /** Flex layout demo */
     #define LV_USE_DEMO_FLEX_LAYOUT     0
-    
+
     /** Smart-phone like multi-language demo */
     #define LV_USE_DEMO_MULTILANG       0
-    
+
     /** Widget transformation demo */
     #define LV_USE_DEMO_TRANSFORM       0
-    
+
     /** Demonstrate scroll settings */
     #define LV_USE_DEMO_SCROLL          0
-    
+
     /*E-bike demo with Lottie animations (if LV_USE_LOTTIE is enabled)*/
     #define LV_USE_DEMO_EBIKE           0
     #if LV_USE_DEMO_EBIKE
         #define LV_DEMO_EBIKE_PORTRAIT  0    /*0: for 480x270..480x320, 1: for 480x800..720x1280*/
     #endif
-    
+
     /** High-resolution demo */
     #define LV_USE_DEMO_HIGH_RES        0
-    
+
     /* Smart watch demo */
     #define LV_USE_DEMO_SMARTWATCH      0
-#endif /* LV_BUILD_DEMOS */ 
+#endif /* LV_BUILD_DEMOS */
 
 /*--END OF LV_CONF_H--*/
 
