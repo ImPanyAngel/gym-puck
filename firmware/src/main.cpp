@@ -2,6 +2,7 @@
 #include "lvgl_port.h"
 #include "buttons.h"
 #include "ui.h"
+#include "ble.h"
 
 void setup() {
     Serial.begin(115200);
@@ -9,6 +10,7 @@ void setup() {
     buttons_init();
     Lvgl_PortInit();
     ui_init();
+    ble_init();
 }
 
 void loop() {

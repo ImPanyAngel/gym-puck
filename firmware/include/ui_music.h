@@ -4,6 +4,14 @@
 
 // Called from inside ui.cpp, which already holds the LVGL lock.
 lv_obj_t * ui_music_create(void);
-void ui_music_set_track(const char *title, const char *artist);
-void ui_music_set_progress(int elapsed_s, int duration_s);
-void ui_music_set_playing(bool playing);
+
+// Disconnected: shows "Not connected" and clears the track
+void ui_music_set_connected(bool connected);
+
+void ui_music_set_title(const char *title);     // empty shows "Nothing playing"
+void ui_music_set_artist(const char *artist);
+void ui_music_set_duration(float seconds);
+
+// From the phone's playback info. The screen moves the progress on by itself from here,
+// at `rate` seconds per second (0 while paused).
+void ui_music_set_playback(bool playing, float rate, float elapsed_s);

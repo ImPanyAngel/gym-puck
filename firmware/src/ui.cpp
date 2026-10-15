@@ -71,3 +71,34 @@ void ui_toggle_screen(void) {
 
     lvgl_unlock();
 }
+
+// Each of these only takes the lock and passes the call on to the music screen
+void ui_set_connected(bool connected) {
+    if (!lvgl_lock(0)) { return; }
+    ui_music_set_connected(connected);
+    lvgl_unlock();
+}
+
+void ui_set_title(const char *title) {
+    if (!lvgl_lock(0)) { return; }
+    ui_music_set_title(title);
+    lvgl_unlock();
+}
+
+void ui_set_artist(const char *artist) {
+    if (!lvgl_lock(0)) { return; }
+    ui_music_set_artist(artist);
+    lvgl_unlock();
+}
+
+void ui_set_duration(float seconds) {
+    if (!lvgl_lock(0)) { return; }
+    ui_music_set_duration(seconds);
+    lvgl_unlock();
+}
+
+void ui_set_playback(bool playing, float rate, float elapsed_s) {
+    if (!lvgl_lock(0)) { return; }
+    ui_music_set_playback(playing, rate, elapsed_s);
+    lvgl_unlock();
+}

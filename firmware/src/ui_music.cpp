@@ -8,6 +8,14 @@ static lv_obj_t * artist_label;
 static lv_obj_t * time_label;
 static lv_obj_t * play_label;
 
+// Playback position, as last reported by the phone. The phone only sends updates when
+// something changes, so the current position is worked out from these and the clock.
+static float duration_s = 0;
+static float elapsed_at_update_s = 0;
+static float playback_rate = 0;           // 1.0 while playing, 0.0 while paused
+static uint32_t update_time_ms = 0;       // when the last playback update arrived
+static int shown_second = -1;             // what the screen shows now, to skip needless redraws
+
 // A button that shows only its icon: no fill, no shadow, a faint highlight while pressed
 static lv_obj_t * create_icon_button(const char *symbol, const lv_font_t *font, int size, int x, int y) {
     lv_obj_t * btn = lv_button_create(screen);
@@ -25,6 +33,35 @@ static lv_obj_t * create_icon_button(const char *symbol, const lv_font_t *font, 
     lv_obj_center(label);
 
     return btn;
+}
+
+// Where playback is now: the last reported position, moved on by the time since then
+static void update_progress(lv_timer_t * timer) {
+    float since_update_s = lv_tick_elaps(update_time_ms) / 1000.0f;
+    float elapsed_s = elapsed_at_update_s + playback_rate * since_update_s;
+    if (elapsed_s > duration_s) {
+        elapsed_s = duration_s;
+    }
+    if (elapsed_s < 0) {
+        elapsed_s = 0;
+    }
+
+    int elapsed = (int) elapsed_s;
+    int duration = (int) duration_s;
+    if (elapsed == shown_second) {
+        return;   // same second as last time: nothing visible would change
+    }
+    shown_second = elapsed;
+
+    // An arc can't have a range of 0 to 0, so give it at least 1
+    lv_arc_set_range(progress_arc, 0, duration > 0 ? duration : 1);
+    lv_arc_set_value(progress_arc, elapsed);
+
+    if (duration > 0) {
+        lv_label_set_text_fmt(time_label, "%d:%02d / %d:%02d", elapsed / 60, elapsed % 60, duration / 60, duration % 60);
+    } else {
+        lv_label_set_text(time_label, "");
+    }
 }
 
 lv_obj_t * ui_music_create(void) {
@@ -75,26 +112,48 @@ lv_obj_t * ui_music_create(void) {
     create_icon_button(LV_SYMBOL_MINUS, &lv_font_montserrat_24, 64, -50, 150);
     create_icon_button(LV_SYMBOL_PLUS, &lv_font_montserrat_24, 64, 50, 150);
 
-    // Placeholder until the iPhone sends real data
-    ui_music_set_track("A Very Long Song Title That Scrolls", "Artist Name");
-    ui_music_set_progress(60, 225);
-    ui_music_set_playing(true);
+    // Recalculate the position twice a second. LVGL timers run in LVGL's own task,
+    // which already holds the lock.
+    lv_timer_create(update_progress, 500, NULL);
+
+    ui_music_set_connected(false);
 
     return screen;
 }
 
-void ui_music_set_track(const char *title, const char *artist) {
-    lv_label_set_text(title_label, title);
+void ui_music_set_connected(bool connected) {
+    if (connected) {
+        // Real values follow straight away from the phone
+        return;
+    }
+    lv_label_set_text(title_label, "Not connected");
+    lv_label_set_text(artist_label, "");
+    duration_s = 0;
+    ui_music_set_playback(false, 0, 0);
+}
+
+void ui_music_set_title(const char *title) {
+    lv_label_set_text(title_label, title[0] != '\0' ? title : "Nothing playing");
+}
+
+void ui_music_set_artist(const char *artist) {
     lv_label_set_text(artist_label, artist);
 }
 
-void ui_music_set_progress(int elapsed_s, int duration_s) {
-    lv_arc_set_range(progress_arc, 0, duration_s);
-    lv_arc_set_value(progress_arc, elapsed_s);
-    lv_label_set_text_fmt(time_label, "%d:%02d / %d:%02d", elapsed_s / 60, elapsed_s % 60, duration_s / 60, duration_s % 60);
+void ui_music_set_duration(float seconds) {
+    duration_s = seconds;
+    shown_second = -1;   // force the time label to redraw with the new total
+    update_progress(NULL);
 }
 
-// The button shows the action a tap would take: pause while playing, play while paused
-void ui_music_set_playing(bool playing) {
+void ui_music_set_playback(bool playing, float rate, float elapsed_s) {
+    elapsed_at_update_s = elapsed_s;
+    playback_rate = rate;
+    update_time_ms = lv_tick_get();
+
+    // The button shows the action a tap would take: pause while playing, play while paused
     lv_label_set_text(play_label, playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+
+    shown_second = -1;
+    update_progress(NULL);
 }
