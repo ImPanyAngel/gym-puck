@@ -8,6 +8,22 @@ This is also my project for learning C++ and embedded systems.
 
 The puck connects to the iPhone over Bluetooth Low Energy using Apple Media Service (AMS), which is built into iOS. It receives the current track's details and sends playback commands back. No iPhone app is needed.
 
+## Interface
+
+![Sketch of the three screens](assets/gym-puck%20sketch.PNG)
+
+| Screen | Contents |
+|---|---|
+| Music (shown at power-on) | Track title, with the artist below it in grey; previous, play/pause and next; volume down and up; elapsed and total time; a progress arc around the edge |
+| Went today? | A large toggle: tap to mark today as a gym day, tap again to undo |
+| Calendar | The days of the week, each filled in if I went |
+
+| Button | Action |
+|---|---|
+| BOOT | Switch to the next screen (Music → Went today? → Calendar → Music) |
+| PWR, press | Deep sleep; press again to wake |
+| PWR, hold | Power off |
+
 ## Hardware
 
 - Waveshare ESP32-S3-Touch-AMOLED-1.32: ESP32-S3 with a 1.32" round AMOLED touch display (466 × 466)
