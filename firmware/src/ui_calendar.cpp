@@ -142,14 +142,10 @@ lv_obj_t * ui_calendar_create(void) {
     lv_obj_set_style_border_color(days, lv_color_hex(UI_COLOR_BACKGROUND), LV_PART_ITEMS);
     lv_obj_add_event_cb(days, style_day_cells, LV_EVENT_DRAW_TASK_ADDED, NULL);
 
-    // Placeholder until the iPhone sends the date
-    ui_calendar_set_today(2026, 10, 16);
-
-    // Example gym days to preview the look; remove once days are saved in flash
-    const int example_days[] = {1, 3, 6, 8, 10, 13, 15};
-    for (int day : example_days) {
-        ui_calendar_set_day_marked(day, true);
-    }
+    // No month to show until the iPhone sends the date
+    lv_obj_add_flag(calendar, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(month_label, "Waiting for iPhone");
+    lv_obj_center(month_label);
 
     return screen;
 }
@@ -170,6 +166,14 @@ void ui_calendar_set_today(int year, int month, int day) {
     lv_calendar_set_month_shown(calendar, year, month);
     lv_label_set_text(month_label, MONTH_NAMES[month - 1]);
     center_on_month(year, month);
+    lv_obj_remove_flag(calendar, LV_OBJ_FLAG_HIDDEN);
+    update_highlights();
+}
+
+void ui_calendar_set_marked_days(uint32_t month_bits) {
+    for (int day = 1; day <= 31; day++) {
+        marked[day] = (month_bits >> day) & 1;   // bit `day` set means a gym day
+    }
     update_highlights();
 }
 

@@ -12,3 +12,6 @@ void ui_set_title(const char *title);
 void ui_set_artist(const char *artist);
 void ui_set_duration(float seconds);
 void ui_set_playback(bool playing, float rate, float elapsed_s);
+
+// Today's date, from the iPhone. Enables "Went today?" and loads saved gym days.
+void ui_set_date(int year, int month, int day);

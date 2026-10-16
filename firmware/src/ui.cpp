@@ -5,6 +5,7 @@
 #include "ui_music.h"
 #include "ui_gym.h"
 #include "ui_calendar.h"
+#include "gym_log.h"
 
 // In the order BOOT cycles through them
 static const int SCREEN_COUNT = 3;
@@ -100,5 +101,17 @@ void ui_set_duration(float seconds) {
 void ui_set_playback(bool playing, float rate, float elapsed_s) {
     if (!lvgl_lock(0)) { return; }
     ui_music_set_playback(playing, rate, elapsed_s);
+    lvgl_unlock();
+}
+
+// Today's date, from the iPhone: loads this month's saved gym days into both gym screens
+void ui_set_date(int year, int month, int day) {
+    if (!lvgl_lock(0)) { return; }
+
+    uint32_t month_bits = gym_log_get_month(year, month);
+    ui_calendar_set_today(year, month, day);
+    ui_calendar_set_marked_days(month_bits);
+    ui_gym_set_today(year, month, day, gym_log_has_day(month_bits, day));
+
     lvgl_unlock();
 }

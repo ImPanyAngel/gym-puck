@@ -91,11 +91,56 @@ struct AmsMessage {
 };
 
 static QueueHandle_t message_queue;
-static NimBLERemoteCharacteristic * remote_command = nullptr;   // only used on the AMS task
+
+// Only used on the AMS task. Both belong to the current connection and are cleared
+// when it ends.
+static NimBLEClient * client = nullptr;
+static NimBLERemoteCharacteristic * remote_command = nullptr;
+
+// Current Time Service, a standard Bluetooth service the iPhone also offers
+static const uint16_t CTS_SERVICE_UUID      = 0x1805;
+static const uint16_t CTS_CURRENT_TIME_UUID = 0x2A2B;
+
+// How often to ask the phone for the date again while connected, so the puck notices
+// when midnight passes without keeping time itself
+static const uint32_t DATE_REFRESH_MS = 5 * 60 * 1000;
+
+// Reads today's date from the phone and passes it to the screens
+static void read_date(void) {
+    if (client == nullptr) {
+        return;
+    }
+    NimBLERemoteService * cts = client->getService(NimBLEUUID(CTS_SERVICE_UUID));
+    NimBLERemoteCharacteristic * current_time =
+        (cts != nullptr) ? cts->getCharacteristic(NimBLEUUID(CTS_CURRENT_TIME_UUID)) : nullptr;
+    if (current_time == nullptr) {
+        Serial.println("Date: Current Time Service not found on the phone");
+        return;
+    }
+
+    // Layout: year (2 bytes, low byte first), month, day, hours, minutes, seconds,
+    // weekday, fractions of a second, adjust reason. Only the first 4 bytes matter here.
+    NimBLEAttValue value = current_time->readValue();
+    if (value.length() < 4) {
+        Serial.println("Date: reply too short");
+        return;
+    }
+    const uint8_t * bytes = value.data();
+    int year = bytes[0] | (bytes[1] << 8);
+    int month = bytes[2];
+    int day = bytes[3];
+    if (year < 2020 || month < 1 || month > 12 || day < 1 || day > 31) {
+        Serial.printf("Date: ignoring invalid date %d-%d-%d\n", year, month, day);
+        return;
+    }
+
+    Serial.printf("Date: %04d-%02d-%02d\n", year, month, day);
+    ui_set_date(year, month, day);
+}
 
 static void subscribe(uint16_t conn_handle) {
     // Getting the client clears whatever was found on a previous connection
-    NimBLEClient * client = NimBLEDevice::getServer()->getClient(conn_handle);
+    client = NimBLEDevice::getServer()->getClient(conn_handle);
 
     NimBLERemoteService * ams = client->getService(AMS_SERVICE_UUID);
     if (ams == nullptr) {
@@ -125,6 +170,8 @@ static void subscribe(uint16_t conn_handle) {
         Serial.println("AMS: Remote Command not found, controls won't work");
     }
     ui_set_connected(true);
+
+    read_date();
 }
 
 static void send_command(uint8_t command) {
@@ -141,13 +188,18 @@ static void send_command(uint8_t command) {
 static void ams_task(void * param) {
     AmsMessage message;
     while (true) {
-        xQueueReceive(message_queue, &message, portMAX_DELAY);   // sleeps until a message
+        // Sleeps until a message arrives, or until it's time to refresh the date
+        if (xQueueReceive(message_queue, &message, pdMS_TO_TICKS(DATE_REFRESH_MS)) != pdTRUE) {
+            read_date();
+            continue;
+        }
         switch (message.type) {
             case MSG_CONNECTED:
                 subscribe(message.value);
                 break;
             case MSG_DISCONNECTED:
-                remote_command = nullptr;   // it belonged to the old connection
+                client = nullptr;           // these belonged to the old connection
+                remote_command = nullptr;
                 break;
             case MSG_COMMAND:
                 send_command(message.value);

@@ -1,13 +1,21 @@
 #include "ui_gym.h"
 #include "ui_colors.h"
 #include "ui_calendar.h"
+#include "gym_log.h"
 
 static lv_obj_t * screen;
+static lv_obj_t * question;
 static lv_obj_t * went_button;
+
+// Today's date, from the iPhone. 0 until it's known.
+static int today_year = 0;
+static int today_month = 0;
+static int today_day = 0;
 
 // Runs each time the toggle flips. LVGL callbacks already hold the lock.
 static void went_changed(lv_event_t * e) {
     bool went = lv_obj_has_state(went_button, LV_STATE_CHECKED);
+    gym_log_set_day(today_year, today_month, today_day, went);
     ui_calendar_set_today_marked(went);
 }
 
@@ -18,8 +26,7 @@ lv_obj_t * ui_gym_create(void) {
     lv_obj_set_style_bg_color(screen, lv_color_hex(UI_COLOR_BACKGROUND), 0);
     lv_obj_set_style_text_color(screen, lv_color_hex(UI_COLOR_PRIMARY), 0);
 
-    lv_obj_t * question = lv_label_create(screen);
-    lv_label_set_text(question, "Went today?");
+    question = lv_label_create(screen);
     lv_obj_set_style_text_font(question, &lv_font_montserrat_34, 0);
     lv_obj_align(question, LV_ALIGN_CENTER, 0, -120);
 
@@ -41,19 +48,29 @@ lv_obj_t * ui_gym_create(void) {
     lv_obj_set_style_text_color(went_button, lv_color_hex(UI_COLOR_TRACK), 0);
     lv_obj_set_style_text_color(went_button, lv_color_hex(UI_COLOR_BACKGROUND), LV_STATE_CHECKED);
     lv_obj_add_event_cb(went_button, went_changed, LV_EVENT_VALUE_CHANGED, NULL);
+    // Disabled (no date yet): ignores taps, and the outline dims to show it
+    lv_obj_set_style_border_color(went_button, lv_color_hex(UI_COLOR_TRACK), LV_STATE_DISABLED);
 
     lv_obj_t * tick = lv_label_create(went_button);
     lv_label_set_text(tick, LV_SYMBOL_OK);
     lv_obj_set_style_text_font(tick, &lv_font_montserrat_48, 0);
     lv_obj_center(tick);
 
-    // Placeholder until the gym log is saved in flash
-    ui_gym_set_went_today(false);
+    // Without the date, a tap can't be saved to the right day, so start disabled
+    lv_label_set_text(question, "Waiting for iPhone");
+    lv_obj_add_state(went_button, LV_STATE_DISABLED);
 
     return screen;
 }
 
-void ui_gym_set_went_today(bool went) {
+void ui_gym_set_today(int year, int month, int day, bool went) {
+    today_year = year;
+    today_month = month;
+    today_day = day;
+
+    lv_label_set_text(question, "Went today?");
+    lv_obj_remove_state(went_button, LV_STATE_DISABLED);
+    // Setting the state from code doesn't send VALUE_CHANGED, so this doesn't save again
     if (went) {
         lv_obj_add_state(went_button, LV_STATE_CHECKED);
     } else {
